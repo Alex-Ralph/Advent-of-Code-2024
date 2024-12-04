@@ -1,5 +1,3 @@
-
-
 def check_safe(report: list[int]) -> bool:
     # Check list is sorted
     ascending = sorted(report)
