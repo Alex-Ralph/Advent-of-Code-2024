@@ -42,6 +42,10 @@ def part1() -> int:
     return sum([find_xmas(x) for x in lines])
 
 def check_surroundings(line_no: int, col_no: int) -> bool:
+    """Checks the diagonals of a given char in 'data' to see if,
+    given that the input character is an 'A', the character is the center
+    of an X-MAS
+    """
     diag_1 = data[line_no-1][col_no-1] + data[line_no+1][col_no+1]
     diag_2 = data[line_no-1][col_no+1] + data[line_no+1][col_no-1]
     if diag_1 in ["SM", "MS"] and diag_2 in ["SM", "MS"]:
