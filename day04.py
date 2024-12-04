@@ -9,29 +9,25 @@ def transpose(wordsearch: list[str]) -> list[str]:
     """rotates the wordsearch 90 degrees"""
     return [''.join(list(x)) for x in zip(*wordsearch)]
 
-def find_diagonals(wordsearch: list[str]) -> list[str]:
-    """returns all left-right diagonals of the wordsearch"""
+def find_diagonal(wordsearch: list[str], x: int, y: int) -> str:
+    """Given an x, y coordinate of a letter in a wordsearch, returns
+    the string heading down+right diagonally"""
     width = len(wordsearch[0])
     height = len(wordsearch)
+    diagonal = ""
+    while y < height and x < width:
+        diagonal += wordsearch[y][x]
+        y+= 1
+        x += 1
+    return diagonal
+
+def find_diagonals(wordsearch: list[str]) -> list[str]:
+    """returns all left-right diagonals of the wordsearch"""
     diagonals = []
-    for index in range(width):
-        diagonal = []
-        y = 0
-        x = index
-        while y < height and x < width:
-            diagonal.append(wordsearch[y][x])
-            y += 1
-            x += 1
-        diagonals.append(''.join(diagonal))
-    for index in range(1, height):
-        diagonal = []
-        y = index 
-        x = 0
-        while y < height and x < width:
-            diagonal.append(wordsearch[y][x])
-            y += 1
-            x += 1
-        diagonals.append(''.join(diagonal))
+    for index in range(len(wordsearch[0])):
+        diagonals.append(find_diagonal(wordsearch, index, 0))
+    for index in range(1, len(wordsearch)):
+        diagonals.append(find_diagonal(wordsearch, 0, index))
     return diagonals
 
 def part1() -> int:
