@@ -1,8 +1,9 @@
+import time
 data = open("input-data/day07.txt").readlines()
 data = [x.strip() for x in data]
 
 def eval_equation(running_total: int, others: list[int], target: int) -> bool:
-    if target <= 0:
+    if running_total > target:
         return False
     if len(others) == 1:
         return (running_total + others[0] == target or running_total * others[0] == target)
@@ -23,7 +24,7 @@ def part_one():
     return total
 
 def eval_with_concat(running_total: int, others: list[int], target: int) -> bool:
-    if target <= 0:
+    if running_total > target:
         return False
     if len(others) == 1:
         last_val = others[0]
@@ -56,4 +57,7 @@ def part_two():
     return total
 
 print(f"Part one: {part_one()}")
+start = time.time()
 print(f"Part two: {part_two()}")
+end = time.time()
+print(f"Time taken: {end - start}")
