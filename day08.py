@@ -1,6 +1,5 @@
 import math
-input = open("input-data/day08.txt").read(
-)
+input = open("input-data/day08.txt").read()
 data = {x + 1j * y: val for y, line in enumerate(input.split("\n"))
         for x, val in enumerate(line)}
 
