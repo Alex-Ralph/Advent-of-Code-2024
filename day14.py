@@ -22,17 +22,6 @@ class Robot:
         new_y = abs(y_movement % MAP_HEIGHT)
         return [new_x, new_y]
 
-    def find_repeat(self):
-        i = 0
-        x_pos = self.x
-        y_pos = self.y
-        while True:
-            x_pos += abs(self.x_vel % MAP_WIDTH)
-            y_pos += abs(self.y_vel % MAP_HEIGHT)
-            i += 1
-            if x_pos == self.x and y_pos == self.y:
-                return i
-
 def print_map(positions):
     for y in range(MAP_HEIGHT):
         line = ""
@@ -49,9 +38,9 @@ def part_one():
     positions = [robot.get_position(100) for robot in robots]
     mid_col = int((MAP_WIDTH+1)/2)
     mid_row = int((MAP_HEIGHT+1)/2)
-    quad_ranges = [[range(mid_col-1), range(mid_row-1)], 
-                   [range(mid_col-1), range(mid_row, MAP_HEIGHT)], 
-                   [range(mid_col, MAP_WIDTH), range(mid_row-1)], 
+    quad_ranges = [[range(mid_col-1), range(mid_row-1)],
+                   [range(mid_col-1), range(mid_row, MAP_HEIGHT)],
+                   [range(mid_col, MAP_WIDTH), range(mid_row-1)],
                    [range(mid_col, MAP_WIDTH), range(mid_row, MAP_HEIGHT)]]
     total = 1
     for ranges in quad_ranges:
@@ -64,9 +53,16 @@ def part_one():
 
 def part_two():
     robots = parse_data()
-    val = max([robot.find_repeat() for robot in robots])
-    print(map([robot.get_position(val) for robot in robots]))
-    print(val)
+    a = 0
+    while True:
+        """I think this mostly just works by coincidence but this is a stupid question anyway"""
+        a += 1
+        positions = [robot.get_position(a) for robot in robots]
+        pos_set = set(tuple(x) for x in positions)
+        if len(positions) == len(pos_set):
+            print_map(positions)
+            print(f"Iterations: {a}")
+            break
 
 print(f"Part one: {part_one()}")
 part_two()
