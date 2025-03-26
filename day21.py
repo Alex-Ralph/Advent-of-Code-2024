@@ -1,11 +1,8 @@
-"""Initial plan:
-1. Write a function that can, for a start and end point, calculate all the shortest routes
-2. Write this for the other type of keypad
-3. Link these together such that for each path in keypad a, we find all the paths in keypad b that would lead to those, and then in keypad c we do the same
-find the smallest path in keypad c
-If we cache results the calculations will be a lot faster"""
+"""
+This solution could definitely be a lot shorter.
+It's solved though, so I'm moving on :)
+"""
 from functools import cache
-import re
 INPUT_FILE = "input-data/day21.txt"
 
 def parse_data() -> list[str]:
@@ -29,7 +26,18 @@ class Keypad():
         self.layout = layout
 
     @cache
+    def get_location(self, button: str) -> tuple[int, int]:
+        """Get coordinates of a button on the keypad"""
+        for y, row in enumerate(self.layout):
+            for x, val in enumerate(row):
+                if val == button:
+                    return (y, x)
+        return None
+
+    @cache
     def _get_shortest_paths(self, start: tuple[int, int], end: tuple[int, int]) -> list[str]:
+        """For a starting coordinate and ending coordinate,
+        returns all possible shortest paths from one to the other"""
         paths = []
         if start == end:
             return [""]
@@ -48,21 +56,15 @@ class Keypad():
         return paths
 
     @cache
-    def get_location(self, button: str) -> tuple[int, int]:
-        for y, row in enumerate(self.layout):
-            for x, val in enumerate(row):
-                if val == button:
-                    return (y, x)
-        return None
-
-    @cache
     def get_shortest_paths(self, start: str, end: str) -> list[str]:
+        """Return all shortest paths from one character to another"""
         start_loc = self.get_location(start)
         end_loc = self.get_location(end)
         return self._get_shortest_paths(start_loc, end_loc)
 
     @cache
     def get_paths_for_sequence(self, inputs: str, start="A") -> list[str]:
+        """Get all paths for a given sequence of buttons"""
         prev_char = start
         paths=[""]
         for char in inputs:
@@ -75,80 +77,39 @@ class Keypad():
         return paths
 
     @cache
-    def find_all_shortest(self, inputs: tuple[str]) -> list[str]:
-        shortest = float('inf')
-        out = []
-        for input in inputs:
-            for path in self.get_paths_for_sequence(input):
-                if len(path) > shortest:
-                    continue
-                elif len(path) == shortest:
-                    out.append(path)
-                else:
-                    out = [path]
-                    shortest = len(path)
-        return out
+    def score_move(self, start: str, end: str, robot_count: int):
+        paths = self.get_shortest_paths(start, end)
+        paths = [x + "A" for x in paths]
+        if robot_count == 1:
+            return len(paths[0])
+        lowest_cost = float('inf')
+        for path in paths:
+            score = 0
+            moves = list(zip("A" + path[:-1], path))
+            for start, end in moves:
+                score += self.score_move(start, end, robot_count - 1)
+            lowest_cost = score if score < lowest_cost else lowest_cost
+        return lowest_cost
 
-    def decode(self, path: str) -> str:
-        """Finds what the output will be if you enter a string of commands"""
-        position = list(self.get_location("A"))
-        out = ""
-        for char in path:
-            match char:
-                case "^":
-                    position[0] -= 1
-                case "v":
-                    position[0] += 1
-                case "<":
-                    position[1] -= 1
-                case ">":
-                    position[1] += 1
-                case "A":
-                    out += self.layout[position[0]][position[1]]
-        return out
+    def score_sequence(self, sequence: str, robot_count: int):
+        moves = list(zip("A" + sequence[:-1], sequence))
+        score = sum([self.score_move(a, b, robot_count) for a, b in moves])
+        return score
 
-def part_one():
+def solve(robots: int):
     numeric_pad = Keypad(numeric_layout)
     directional_pad = Keypad(directional_layout)
-    codes = parse_data()
-    complexities = 0
-    for code in codes:
-        numeric_paths = numeric_pad.get_paths_for_sequence(code)
-        inner_directional_paths = directional_pad.find_all_shortest(tuple(numeric_paths))
-        outer_directional_paths = directional_pad.find_all_shortest(tuple(inner_directional_paths))
-        complexities += len(outer_directional_paths[0]) * int(code[:-1])
-    print(complexities)
+    data = parse_data()
+    out=0
+    for code in data:
+        initial_paths = numeric_pad.get_paths_for_sequence(code)
+        scores = [
+            directional_pad.score_sequence(x, robots)
+            for x in initial_paths
+        ]
+        lowest_score = min(scores)
+        out += lowest_score * int(code[:-1])
+    print(out)
 
-def part_two():
-    """Is there some sort of mathematical rule we can use to remove A-presses, or calculate how much
-    larger it will be for each directional pad?
-    Each time you press a key you have to double the journey to go back to the A button, is that something?"""
-    numeric_pad = Keypad(numeric_layout)
-    directional_pad = Keypad(directional_layout)
-    codes = parse_data()
-    complexities = 0
-    for code in codes:
-        shortest_paths = numeric_pad.get_paths_for_sequence(code)
-        for i in range(25):
-            print(f"i: {i}")
-            shortest_paths = directional_pad.find_all_shortest(tuple(shortest_paths))
-        complexities += len(shortest_paths[0] * int(code[:-1]))
-    print(complexities)
-
-part_one()
-# part_two()
-numeric_pad = Keypad(numeric_layout)
-directional_pad = Keypad(directional_layout)
-codes = ["<"]
-complexities = 0
-for code in codes:
-    shortest_paths = codes
-    for i in range(6):
-        print(f"i: {i}")
-        shortest_paths = directional_pad.find_all_shortest(tuple(shortest_paths))
-        print(len(shortest_paths[0]))
-    complexities += len(shortest_paths[0] * int(code[:-1]))
-print(complexities)
-
-"""Each arrow has a "cost" and you always end up having to move from A, to the arrow, back to A.
-Is thare a reliable value you could multiply each arrow by?"""
+solve(2)
+solve(25)
