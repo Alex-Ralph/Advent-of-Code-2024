@@ -8,8 +8,8 @@ import resource
 
 def parse_data():
     """Returns a dict representing a graph
-    the graph is sorted by vertex weight from lightest to heaviest
-    Key: vertex, values: connected vertices"""
+    Key: vertex
+    item: list of vertices connected to the key vertex"""
     with open("input-data/day23.txt") as file:
         lines = file.read().splitlines()
     graph = {f"{chr(x)}"+f"{chr(y)}":[]
@@ -30,14 +30,10 @@ def remove_vertex(graph: dict[str, list[str]], removed_vertex: str):
             continue
     del graph[removed_vertex]
 
-def sort_graph(graph: dict[str, list[str]]) -> tuple[str]:
-    """Returns tuple of graph items sorted by their weight, lowest to highest"""
-    return sorted(graph.keys(), key=lambda x: len(graph[x]))
-
 def part_one():
     """Finds all cliques K3, filters down to cliques containing a computer starting with 't'"""
     graph = parse_data()
-    sorted_vertices = sort_graph(graph)
+    sorted_vertices = sorted(graph.keys(), key=lambda x: len(graph[x]))
     triangles = []
     for v in sorted_vertices:
         marked = copy(graph[v])
@@ -51,33 +47,41 @@ def part_one():
     answer = len(t_tris)
     print(answer)
 
-def expand(graph, candidates, clique):
-    maximum_clique = clique
-    for p in candidates:
-        new_clique = clique + [p]
-        new_candidates = candidates & graph[p]
-        if candidates:
-            new_clique = expand(graph, new_candidates, new_clique)
-        if len(new_clique) > len(maximum_clique):
-            maximum_clique = new_clique
-    return maximum_clique
-
 def part_two():
     """Finds the maximum clique"""
-    resource.setrlimit(resource.RLIMIT_STACK, [0x1000000, resource.RLIM_INFINITY])
-    sys.setrecursionlimit(0x10000)
     graph = parse_data()
     graph = {k: set(v) for k, v in graph.items()}
-    sorted_graph = sort_graph(graph)
-    max_degree = len(graph[sorted_graph[-1]])
-    candidates = set(sorted_graph)
-    print(len(candidates))
-    maximum_clique = expand(graph, candidates, [])
-    sorted_clique = sorted(maximum_clique)
-    print(','.join(sorted_clique))
+    sorted_graph = sorted(graph.keys(), key=lambda x: len(graph[x]))
+    all_candidates = sorted_graph
+    max_clique = []
+    max_size = 0
+    def find_largest_clique(candidates: list[str], size: int, current_clique: list[str]):
+        nonlocal max_size, max_clique, graph
+        if len(candidates) == 0:
+            if size > max_size:
+                max_size = size
+                max_clique = current_clique
+            return
+        while candidates:
+            if size+len(candidates) <= max_size:
+                return
+            i = candidates.pop(0)
+            new_clique = copy(current_clique) + [i]
+            new_candidates = [x for x in candidates if x in graph[i]]
+            find_largest_clique(new_candidates, size+1, new_clique)
+    find_largest_clique(all_candidates, 0, [])
+    print(','.join(sorted(max_clique)))
 
 part_one()
 part_two()
 
 """Part one's algorithm was taken from:
-Chiba, N.; Nishizeki, T. (1985), "Arboricity and subgraph listing algorithms", SIAM Journal on Computing, 14 (1): 210–223"""
+Chiba, N.; Nishizeki, T. (1985), "Arboricity and subgraph listing algorithms", SIAM Journal on Computing, 14 (1): 210–223
+available here:
+https://www.cs.cornell.edu/courses/cs6241/2019sp/readings/Chiba-1985-arboricity.pdf
+
+Part two's was taken from "A fast algorithm for the maximum clique problem", Patric R.J. Östergård,
+DIscrete Applied Mathematics v.120 iss.1-3, 197-207
+available here:
+https://www.sciencedirect.com/science/article/pii/S0166218X01002906
+"""
