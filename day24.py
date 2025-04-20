@@ -1,5 +1,5 @@
 from copy import copy, deepcopy
-from itertools import  permutations
+from itertools import combinations, permutations
 class Wire():
     def __init__(self, inputs: list[str], output: str, operation: str) -> None:
         self.inputs = inputs
@@ -46,50 +46,70 @@ def parse_data() -> tuple[dict[str: bool], tuple[Wire]]:
             wires.append(Wire((wire_val[0], wire_val[2]), wire_val[-1], wire_val[1]))
         return gate_dict, wires
 
-def solve_gates(gates: dict[str: bool], wires: tuple[Wire]) -> None:
-    wires = deepcopy(wires)
-    while wires:
-        solved_wires = [x for x in wires if x.solve(gates) == True]
-        for x in solved_wires:
-            wires.remove(x)
-        if len(solved_wires) == 0:
-            break
+class Breadboard():
+    def __init__(self):
+        self.init_gates, self.wires = parse_data()
+        self.reset()
 
+    def reset(self):
+        self.gates = copy(self.init_gates)
+        for x in self.wires:
+            x.value = None
+
+    def solve_gates(self):
+        while self.wires:
+            solved_wires = [x for x in self.wires if x.solve(self.gates) == True]
+            for x in solved_wires:
+                self.wires.remove(x)
+            if len(solved_wires) == 0:
+                break
+
+    def swap_outputs(self, wire_a_index: int, wire_b_index: int):
+        x = self.wires[wire_a_index].output
+        self.wires[wire_a_index].output = self.wires[wire_b_index].output
+        self.wires[wire_b_index].output = x
+
+    def get_binary_value(self, gate_letter: str) -> int:
+        output_gates = sorted([x for x in self.gates if x[0] == gate_letter], reverse=True)
+        return int("".join(str(int(self.gates[x])) for x in output_gates), 2)
 
 def part_one():
-    gates, wires = parse_data()
-    solve_gates(gates, wires)
-    z_values = [x for x in gates if x[0] == 'z']
-    z_values.sort(reverse=True)
-    binary = "".join(str(int(gates[x])) for x in z_values)
-    print(int(binary, 2))
+    board = Breadboard()
+    board.solve_gates()
+    print(board.get_binary_value("z"))
+
+def find_valuable_swaps(target_value: str, initial_value: str, board: Breadboard,
+                        unswapped_wires: list[Wire]) -> list[int]:
+    """Could solve this recursively, keep stacking up changes to the same breadboard
+    until we reach 8 swaps"""
+
+
 
 def part_two():
-    # This would work eventually, in a few thousand years
-    # My instinct is to work out which gates change which values of z
-    gates, wires = parse_data()
-    output_gates = [sorted([x for x in gates if x[0] == char], reverse=True) for char in ("x", "y", "z")]
-    perms = permutations(wires, 8)
-    for permutation in perms:
-        new_gates = copy(gates)
-        for i in range(0,len(permutation),2):
-            x = permutation[i].output
-            permutation[i].output = permutation[i+1].output
-            permutation[i+1].output = x
-        solve_gates(new_gates, wires)
-        for i in range(0,len(permutation),2):
-            x = permutation[i].output
-            permutation[i].output = permutation[i+1].output
-            permutation[i+1].output = x
-        if any([True for y in output_gates for x in y if new_gates[x] is None]):
-            continue # not all x, y, and z gates have values
-        binary_values = []
-        for x in output_gates:
-            binary_string = "".join(str(int(new_gates[y])) for y in x)
-            binary_values.append(int(binary_string, 2))
-        if binary_values[0] + binary_values[1] == binary_values[2]:
-            print(",".join(sorted([x.output for x in permutation])))
-            break
+    # Potential solutions
+    # 1. for each pair, check if it gets closer to the answer.
+    # Then for each pair that gets closer to the answer, iterate through
+    # all the pairs again and see if they will get any closer
+    # iterate until we have eight swaps and a solution
+
+    # 2. For each z-value, find all the pairs that influence that value
+    # work from here idk
+    board = Breadboard()
+    board.solve_gates()
+    target_value = board.get_binary_value("x") + board.get_binary_value("y")
+    target_string = f"{target_value:b}"
+    initial_string = f'{board.get_binary_value("z"):b}'
+    initial_diff_count = sum(1 for x, y in zip(target_string, initial_string) if x != y)
+    possible_swaps = combinations(list(range(len(board.init_wires))), 2)
+    board.reset()
+    valuable_swaps = []
+    for swap in possible_swaps:
+        board.swap_outputs(swap[0], swap[1])
+        new_result = f'{board.get_binary_value("z"):b}'
+        diff_count = sum(1 for x, y in zip(target_string, new_result) if x != y)
+        if diff_count < initial_diff_count:
+            valuable_swaps.append(swap)
+        board.reset()
 
 part_one()
-part_two()
+# part_two()
